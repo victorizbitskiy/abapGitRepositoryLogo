@@ -60,4 +60,7 @@ If you need to get the [logo of a GitLab repository](https://docs.gitlab.com/ee/
       lv_e_msg = lx_e->get_text( ).
       cl_abap_unit_assert=>fail( msg = lv_e_msg ).
     ENDTRY.
-```abap
+```
+
+## Dependencies
+[AbapGit](https://github.com/abapGit/abapGit) required.
