@@ -167,7 +167,9 @@
     },
     "begin_end_names": true,
     "check_transformation_exists": false,
-    "check_syntax": true,
+    "check_syntax": {
+      "exclude": ["zcx_abapgit_exception"]
+    },
     "class_attribute_names": {
       "ignoreExceptions": true,
       "ignoreInterfaces": false,
