@@ -6,14 +6,14 @@ CLASS ltc_rl_repo_logo_github DEFINITION FOR TESTING
   RISK LEVEL HARMLESS FINAL.
 
   PRIVATE SECTION.
-    DATA: mo_cut TYPE REF TO zcl_rl_repo_logo_github.  "class under test
+    DATA: mi_cut TYPE REF TO zif_rl_repo_logo_git.
 
     CLASS-METHODS: class_setup.
     CLASS-METHODS: class_teardown.
     METHODS: setup.
     METHODS: teardown.
     METHODS: get FOR TESTING.
-ENDCLASS.       "ltc_Repo_Logo_Github
+ENDCLASS.
 
 
 CLASS ltc_rl_repo_logo_github IMPLEMENTATION.
@@ -32,14 +32,22 @@ CLASS ltc_rl_repo_logo_github IMPLEMENTATION.
 
     DATA lv_token TYPE string.
     DATA ls_repo TYPE zcl_rl_repo_logo_factory=>ty_repo.
+    DATA lx_e TYPE REF TO zcx_abapgit_exception.
+    DATA lv_e_msg TYPE string.
 
     ls_repo-owner = 'octocat'.
     ls_repo-name = 'Hello-World'.
     lv_token = '<YOUR GITHUB TOKEN>'.
 
-    mo_cut ?= zcl_rl_repo_logo_factory=>get_instance( iv_service = 'github'
-                                                      is_repo  = ls_repo
-                                                      iv_token = lv_token ).
+    TRY.
+        mi_cut = zcl_rl_repo_logo_factory=>get_instance( iv_service = 'github'
+                                                         is_repo  = ls_repo
+                                                         iv_token = lv_token ).
+      CATCH zcx_abapgit_exception INTO lx_e.
+        lv_e_msg = lx_e->get_text( ).
+        cl_abap_unit_assert=>fail( msg = lv_e_msg ).
+    ENDTRY.
+
   ENDMETHOD.
 
   METHOD teardown.
@@ -50,18 +58,26 @@ CLASS ltc_rl_repo_logo_github IMPLEMENTATION.
     DATA li_repo_logo TYPE REF TO zif_rl_repo_logo.
     DATA lv_logo TYPE xstring.
     DATA lv_extension TYPE string.
+    DATA lx_e TYPE REF TO zcx_abapgit_exception.
+    DATA lv_e_msg TYPE string.
 
-    li_repo_logo = mo_cut->get(  ).
-    lv_logo = li_repo_logo->get( ).
-    lv_extension = li_repo_logo->get_extension( ).
+    TRY.
+        li_repo_logo = mi_cut->get(  ).
+        lv_logo = li_repo_logo->get( ).
+        lv_extension = li_repo_logo->get_extension( ).
 
-    IF lv_logo IS INITIAL.
-      cl_aunit_assert=>fail( msg = 'Logo is initial' ).
-    ENDIF.
+        IF lv_logo IS INITIAL.
+          cl_abap_unit_assert=>fail( msg = 'Logo is initial' ).
+        ENDIF.
 
-    IF lv_extension IS INITIAL.
-      cl_aunit_assert=>fail( msg = 'Extension is initial' ).
-    ENDIF.
+        IF lv_extension IS INITIAL.
+          cl_abap_unit_assert=>fail( msg = 'Extension is initial' ).
+        ENDIF.
+
+      CATCH zcx_abapgit_exception INTO lx_e.
+        lv_e_msg = lx_e->get_text( ).
+        cl_abap_unit_assert=>fail( msg = lv_e_msg ).
+    ENDTRY.
 
   ENDMETHOD.
 

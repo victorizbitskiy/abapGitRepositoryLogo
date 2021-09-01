@@ -1,14 +1,14 @@
 CLASS zcl_rl_repo_logo_github DEFINITION
   PUBLIC
   FINAL
-  CREATE PUBLIC.
+  CREATE PUBLIC .
 
   PUBLIC SECTION.
 
-    INTERFACES zif_rl_repo_logo_git.
+    INTERFACES zif_rl_repo_logo_git .
 
     ALIASES get
-      FOR zif_rl_repo_logo_git~get.
+      FOR zif_rl_repo_logo_git~get .
 
     METHODS constructor
       IMPORTING
@@ -16,7 +16,7 @@ CLASS zcl_rl_repo_logo_github DEFINITION
         !iv_token      TYPE string
         !iv_ssl_id     TYPE ssfapplssl DEFAULT 'ANONYM'
         !iv_proxy_url  TYPE string OPTIONAL
-        !iv_proxy_port TYPE string OPTIONAL.
+        !iv_proxy_port TYPE string OPTIONAL .
   PROTECTED SECTION.
   PRIVATE SECTION.
 
@@ -44,18 +44,24 @@ CLASS zcl_rl_repo_logo_github DEFINITION
       IMPORTING
         !iv_url             TYPE string
       RETURNING
-        VALUE(ri_repo_logo) TYPE REF TO zif_rl_repo_logo .
+        VALUE(ri_repo_logo) TYPE REF TO zif_rl_repo_logo
+      RAISING
+        zcx_abapgit_exception .
     METHODS create_query
       RETURNING
-        VALUE(rv_query) TYPE string .
+        VALUE(rv_query) TYPE xstring .
     METHODS get_logo_url
       RETURNING
-        VALUE(rv_url) TYPE string .
+        VALUE(rv_url) TYPE string
+      RAISING
+        zcx_abapgit_exception .
     METHODS create_http_client
       IMPORTING
         !iv_url          TYPE string
       RETURNING
-        VALUE(ri_client) TYPE REF TO if_http_client .
+        VALUE(ri_client) TYPE REF TO if_http_client
+      RAISING
+        zcx_abapgit_exception .
 ENDCLASS.
 
 
@@ -77,6 +83,8 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
 
   METHOD create_http_client.
 
+    DATA lv_text TYPE string.
+
     cl_http_client=>create_by_url(
       EXPORTING
         url                = iv_url
@@ -93,9 +101,12 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
     IF sy-subrc <> 0.
       CASE sy-subrc.
         WHEN 1.
+          lv_text = 'HTTPS ARGUMENT_NOT_FOUND | STRUST/SSL Setup correct?'.
         WHEN OTHERS.
+          lv_text = 'While creating HTTP Client'.
       ENDCASE.
-*      exception raise
+
+      zcx_abapgit_exception=>raise( lv_text ).
     ENDIF.
 
   ENDMETHOD.
@@ -103,8 +114,12 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
 
   METHOD create_query.
 
-    rv_query = `{ "query": "{ repository( owner: \"` && ms_repo-owner && `\", name: \"` &&  ms_repo-name && `\" )` &&
-               `{ openGraphImageUrl } }" }`.
+    DATA lv_tmp TYPE string.
+
+    lv_tmp = `{ "query": "{ repository( owner: \"` && ms_repo-owner && `\", name: \"` &&  ms_repo-name && `\" )` &&
+             `{ openGraphImageUrl } }" }`.
+
+    rv_query = zcl_abapgit_convert=>string_to_xstring_utf8( lv_tmp ).
 
   ENDMETHOD.
 
@@ -112,10 +127,9 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
   METHOD get_logo_url.
 
     DATA lr_http_client TYPE REF TO if_http_client.
-    DATA lv_query TYPE string.
-    DATA lv_code    TYPE i.
+    DATA lv_query TYPE xstring.
+    DATA lv_code TYPE i.
     DATA lv_message TYPE string.
-    DATA lv_text    TYPE string.
     DATA lv_response_json TYPE string.
     DATA ls_response_abap TYPE ty_response.
     DATA lv_auth_value TYPE string.
@@ -131,7 +145,7 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
     lr_http_client->request->set_header_field( name  = 'Authorization'
                                                value = lv_auth_value ).
     lv_query = create_query( ).
-    lr_http_client->request->set_cdata( lv_query ).
+    lr_http_client->request->set_data( lv_query ).
 
     lr_http_client->send(
       EXCEPTIONS
@@ -156,9 +170,7 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
           code = lv_code
           message = lv_message ).
 
-      lv_text = |HTTP error { lv_code } occured: { lv_message }|.
-
-*TODO raise exception
+      zcx_abapgit_exception=>raise( |HTTP error { lv_code } occured: { lv_message }| ).
     ENDIF.
 
     lv_response_json = lr_http_client->response->get_cdata( ).
@@ -176,9 +188,8 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
   METHOD get_repo_logo.
 
     DATA li_http_client TYPE REF TO if_http_client.
-    DATA lv_code    TYPE i.
+    DATA lv_code TYPE i.
     DATA lv_message TYPE string.
-    DATA lv_text    TYPE string.
     DATA lv_type TYPE string.
     DATA lv_extension TYPE string.
     DATA lv_response_data TYPE xstring.
@@ -211,9 +222,7 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
           code = lv_code
           message = lv_message ).
 
-      lv_text = |HTTP error { lv_code } occured: { lv_message }|.
-*     TODO raise exception
-
+      zcx_abapgit_exception=>raise( |HTTP error { lv_code } occured: { lv_message }| ).
     ENDIF.
 
     lv_response_data = li_http_client->response->get_data( ).

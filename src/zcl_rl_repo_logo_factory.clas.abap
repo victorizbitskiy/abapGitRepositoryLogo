@@ -1,7 +1,7 @@
 CLASS zcl_rl_repo_logo_factory DEFINITION
   PUBLIC
   FINAL
-  CREATE PUBLIC.
+  CREATE PUBLIC .
 
   PUBLIC SECTION.
 
@@ -9,7 +9,7 @@ CLASS zcl_rl_repo_logo_factory DEFINITION
       BEGIN OF ty_repo,
         owner TYPE string,
         name  TYPE string,
-      END OF ty_repo.
+      END OF ty_repo .
 
     CONSTANTS:
       BEGIN OF c_service,
@@ -26,7 +26,9 @@ CLASS zcl_rl_repo_logo_factory DEFINITION
         !iv_proxy_url           TYPE string OPTIONAL
         !iv_proxy_port          TYPE string OPTIONAL
       RETURNING
-        VALUE(ri_repo_logo_git) TYPE REF TO zif_rl_repo_logo_git.
+        VALUE(ri_repo_logo_git) TYPE REF TO zif_rl_repo_logo_git
+      RAISING
+        zcx_abapgit_exception .
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -62,7 +64,7 @@ CLASS ZCL_RL_REPO_LOGO_FACTORY IMPLEMENTATION.
             iv_proxy_port = iv_proxy_port.
 
       WHEN OTHERS.
-*        TODO: raise Exception
+        zcx_abapgit_exception=>raise( |Getting a logo for the { iv_service } service is not supported| ).
     ENDCASE.
 
   ENDMETHOD.

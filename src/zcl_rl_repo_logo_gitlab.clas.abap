@@ -1,14 +1,14 @@
 CLASS zcl_rl_repo_logo_gitlab DEFINITION
   PUBLIC
   FINAL
-  CREATE PUBLIC.
+  CREATE PUBLIC .
 
   PUBLIC SECTION.
 
-    INTERFACES zif_rl_repo_logo_git.
+    INTERFACES zif_rl_repo_logo_git .
 
     ALIASES get
-      FOR zif_rl_repo_logo_git~get.
+      FOR zif_rl_repo_logo_git~get .
 
     METHODS constructor
       IMPORTING
@@ -16,46 +16,52 @@ CLASS zcl_rl_repo_logo_gitlab DEFINITION
         !iv_token      TYPE string
         !iv_ssl_id     TYPE ssfapplssl DEFAULT 'ANONYM'
         !iv_proxy_url  TYPE string OPTIONAL
-        !iv_proxy_port TYPE string OPTIONAL.
+        !iv_proxy_port TYPE string OPTIONAL .
   PROTECTED SECTION.
   PRIVATE SECTION.
 
     TYPES:
       BEGIN OF ty_avatarurl,
         avatarurl TYPE string,
-      END OF ty_avatarurl.
+      END OF ty_avatarurl .
     TYPES:
       BEGIN OF ty_project,
         project TYPE ty_avatarurl,
-      END OF ty_project.
+      END OF ty_project .
     TYPES:
       BEGIN OF ty_response,
         data TYPE ty_project,
-      END OF ty_response.
+      END OF ty_response .
 
-    DATA mv_url TYPE string.
-    DATA mv_token TYPE string.
+    DATA mv_url TYPE string .
+    DATA mv_token TYPE string .
     DATA ms_repo TYPE zcl_rl_repo_logo_factory=>ty_repo .
-    DATA mv_ssl_id TYPE ssfapplssl.
-    DATA mv_proxy_url TYPE string.
-    DATA mv_proxy_port TYPE string.
+    DATA mv_ssl_id TYPE ssfapplssl .
+    DATA mv_proxy_url TYPE string .
+    DATA mv_proxy_port TYPE string .
 
     METHODS get_repo_logo
       IMPORTING
         !iv_url             TYPE string
       RETURNING
-        VALUE(ri_repo_logo) TYPE REF TO zif_rl_repo_logo.
+        VALUE(ri_repo_logo) TYPE REF TO zif_rl_repo_logo
+      RAISING
+        zcx_abapgit_exception .
     METHODS create_query
       RETURNING
-        VALUE(rv_query) TYPE string.
+        VALUE(rv_query) TYPE xstring .
     METHODS get_logo_url
       RETURNING
-        VALUE(rv_url) TYPE string.
+        VALUE(rv_url) TYPE string
+      RAISING
+        zcx_abapgit_exception .
     METHODS create_http_client
       IMPORTING
         !iv_url          TYPE string
       RETURNING
-        VALUE(ri_client) TYPE REF TO if_http_client.
+        VALUE(ri_client) TYPE REF TO if_http_client
+      RAISING
+        zcx_abapgit_exception .
 ENDCLASS.
 
 
@@ -77,6 +83,8 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
 
   METHOD create_http_client.
 
+    DATA lv_text TYPE string.
+
     cl_http_client=>create_by_url(
       EXPORTING
         url                = iv_url
@@ -93,9 +101,12 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
     IF sy-subrc <> 0.
       CASE sy-subrc.
         WHEN 1.
+          lv_text = 'HTTPS ARGUMENT_NOT_FOUND | STRUST/SSL Setup correct?'.
         WHEN OTHERS.
+          lv_text = 'While creating HTTP Client'.
       ENDCASE.
-*      exception raise
+
+      zcx_abapgit_exception=>raise( lv_text ).
     ENDIF.
 
   ENDMETHOD.
@@ -103,20 +114,22 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
 
   METHOD create_query.
 
-    rv_query = `{ "query": "{ project( fullPath: \"` && ms_repo-owner && `/` &&  ms_repo-name && `\" )` &&
-               `{ avatarUrl } }" }`.
+    DATA lv_tmp TYPE string.
 
-*{ "query": "{ project( fullPath: \"victorizbitskiy/zconcurrency_api\" ){ avatarUrl } }" }
+    lv_tmp = `{ "query": "{ project( fullPath: \"` && ms_repo-owner && `/` &&  ms_repo-name && `\" )` &&
+             `{ avatarUrl } }" }`.
+
+    rv_query = zcl_abapgit_convert=>string_to_xstring_utf8( lv_tmp ).
+
   ENDMETHOD.
 
 
   METHOD get_logo_url.
 
     DATA lr_http_client TYPE REF TO if_http_client.
-    DATA lv_query TYPE string.
-    DATA lv_code    TYPE i.
+    DATA lv_query TYPE xstring.
+    DATA lv_code TYPE i.
     DATA lv_message TYPE string.
-    DATA lv_text    TYPE string.
     DATA lv_response_json TYPE string.
     DATA ls_response_abap TYPE ty_response.
     DATA lv_auth_value TYPE string.
@@ -132,7 +145,7 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
     lr_http_client->request->set_header_field( name  = 'Authorization'
                                                value = lv_auth_value ).
     lv_query = create_query( ).
-    lr_http_client->request->set_cdata( lv_query ).
+    lr_http_client->request->set_data( lv_query ).
 
     lr_http_client->send(
       EXCEPTIONS
@@ -157,9 +170,7 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
           code = lv_code
           message = lv_message ).
 
-      lv_text = |HTTP error { lv_code } occured: { lv_message }|.
-
-*TODO raise exception
+      zcx_abapgit_exception=>raise( |HTTP error { lv_code } occured: { lv_message }| ).
     ENDIF.
 
     lv_response_json = lr_http_client->response->get_cdata( ).
@@ -179,7 +190,6 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
     DATA li_http_client TYPE REF TO if_http_client.
     DATA lv_code    TYPE i.
     DATA lv_message TYPE string.
-    DATA lv_text    TYPE string.
     DATA lv_type TYPE string.
     DATA lv_extension TYPE string.
     DATA lv_response_data TYPE xstring.
@@ -212,9 +222,7 @@ CLASS ZCL_RL_REPO_LOGO_GITLAB IMPLEMENTATION.
           code = lv_code
           message = lv_message ).
 
-      lv_text = |HTTP error { lv_code } occured: { lv_message }|.
-*     TODO raise exception
-
+      zcx_abapgit_exception=>raise( |HTTP error { lv_code } occured: { lv_message }| ).
     ENDIF.
 
     lv_response_data = li_http_client->response->get_data( ).
