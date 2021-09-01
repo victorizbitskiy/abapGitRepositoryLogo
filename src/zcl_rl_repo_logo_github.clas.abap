@@ -217,7 +217,7 @@ CLASS ZCL_RL_REPO_LOGO_GITHUB IMPLEMENTATION.
     ENDIF.
 
     lv_response_data = li_http_client->response->get_data( ).
-    lv_content_type = li_http_client->response->if_http_entity~get_content_type( ).
+    lv_content_type = li_http_client->response->get_content_type( ).
     li_http_client->close( ).
 
     SPLIT lv_content_type AT '/' INTO lv_type lv_extension.
