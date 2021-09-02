@@ -31,7 +31,6 @@ For example, you need to get the [logo of a GitHub repository](https://docs.gith
       
       CATCH zcx_abapgit_exception INTO lx_e.
         lv_e_msg = lx_e->get_text( ).
-        cl_abap_unit_assert=>fail( msg = lv_e_msg ).
      ENDTRY.
 ````
 #### 2) GitLab
@@ -58,7 +57,6 @@ If you need to get the [logo of a GitLab repository](https://docs.gitlab.com/ee/
    
     CATCH zcx_abapgit_exception INTO lx_e.
       lv_e_msg = lx_e->get_text( ).
-      cl_abap_unit_assert=>fail( msg = lv_e_msg ).
     ENDTRY.
 ```
 
